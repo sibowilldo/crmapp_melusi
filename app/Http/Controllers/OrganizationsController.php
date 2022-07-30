@@ -15,7 +15,16 @@ class OrganizationsController extends Controller
      */
     public function index()
     {
-        $organization = organization::paginate();
+
+        $user = Auth::user();
+
+        if(auth()->user()->hasRole('super_admin'))
+        {
+            $organization = Organization::paginate();
+            return view('organizations.index', compact('organization'));
+        }
+        $organization = Organization::where('account_id','=',auth()->user()->account_id)->get();
+
 
         return view('organizations.index', compact('organization'));
     }
@@ -27,6 +36,8 @@ class OrganizationsController extends Controller
      */
     public function create()
     {
+
+        $this->authorize('create-organizations', $organization);
         $account = Account::all();
         return view('organizations.create')->with('account',$account);
     }
@@ -50,7 +61,7 @@ class OrganizationsController extends Controller
             'region'=> 'required',
             'address'=> 'required',
             'postal_code'=> 'required',
-            'accounts_id'=> 'required',
+            'account_id'=> 'required',
 
 
 
@@ -70,7 +81,14 @@ class OrganizationsController extends Controller
      */
     public function show(organization $organization)
     {
-        //
+
+        if(auth()->user()->hasRole('admin') && (Auth::user()->account_id===$organization->account_id))
+        {
+            return view('organizations.show',compact('organization'));
+        }
+        $this->authorize('can-read-organizations',$organization);
+        $this->authorize('can-view-own-org',$organization);
+
         return view('organizations.show',compact('organization'));
     }
 
@@ -108,7 +126,7 @@ class OrganizationsController extends Controller
             'region'=> 'required',
             'address'=> 'required',
             'postal_code'=> 'required',
-            'accounts_id'=> 'required',
+            'account_id'=> 'required',
 
 
 

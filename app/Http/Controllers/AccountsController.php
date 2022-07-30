@@ -16,7 +16,16 @@ class AccountsController extends Controller
     public function index()
     {
 
-        $accounts = Account::paginate();
+        if(auth()->user()->hasRole('super_admin'))
+        {
+            $accounts = Account::paginate();
+            return view('accounts.index', compact('accounts'));
+        }
+
+
+
+        $accounts = Account::where('id','=',auth()->user()->account_id)->get();
+
 
         return view('accounts.index', compact('accounts'));
 
@@ -30,7 +39,9 @@ class AccountsController extends Controller
      */
     public function create()
     {
-        return view('accounts.create');
+            $this->authorize('create-accounts', $account);
+            return view('accounts.create');
+
     }
 
     /**
@@ -62,6 +73,10 @@ class AccountsController extends Controller
         //$id = accounts::get
        // $accounts = DB::table('accounts')->find(1);
         //$accounts = Account::paginate(10);
+
+        $this->authorize('read-accounts', $account);
+        $this->authorize('can-view-own-acc',$account);
+
         return view('accounts.show',compact('account'));
 
 
@@ -74,6 +89,8 @@ class AccountsController extends Controller
      */
     public function edit(Account $account)
     {
+
+      $this->authorize('update-accounts', $account);
 
         return view('accounts.edit',compact('account'));
     }
@@ -90,10 +107,6 @@ class AccountsController extends Controller
 
     public function update(Request $request, Account $account)
     {
-        $request->validate([
-            'name' => 'required',
-
-        ]);
 
         $account->update($request->all());
 

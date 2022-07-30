@@ -22,9 +22,26 @@ class UsersController extends Controller
      */
     public function index()
     {
-        $user = User::all();
 
-        return view('users.index')->with('user',$user);
+        $user = Auth::user();
+
+        if(($user->hasRole('user')))
+        {
+             $users = User::where('id',auth()->id())->get();
+
+        }
+         else if((Auth::user()->hasRole('admin')))
+         {
+            $users = User::where('id','>',1)->where('account_id','=',Auth::user()->account_id)->where('organization_id','=',auth()->user()->organization_id)->get();
+         }
+         else if(Auth::user()->hasRole('super_admin'))
+         {
+             $users = User::all();
+         }
+
+        # $users = auth->user()->hasRole('admin') ? User::where('users.account.id', auth()->user->account_id)->get() : auth()->user()
+
+        return view('users.index', compact('users'));
     }
 
     /**
@@ -34,7 +51,6 @@ class UsersController extends Controller
      */
     public function create(array $data)
     {
-        //
         $account = Account::all();
 
         return User::create([
@@ -62,7 +78,9 @@ class UsersController extends Controller
             'region'=> 'required',
             'address'=> 'required',
             'postal_code'=> 'required',
-            'accounts_id'=> 'required',
+
+            'organization_id'=>'required',
+            'account_id'=> 'required',
         ]);
 
         $data = $request->all();
@@ -80,10 +98,13 @@ class UsersController extends Controller
      */
     public function show(User $users)
     {
-        //
-        $id = Auth::User()->id;
-        $user=User::find($id);
 
+
+        if(auth()->user()->hasRole('admin') && (Auth::user()->account_id===$user->account_id)&&!($user->hasRole('super_admin')))
+        {
+            return view('users.show',compact('user','account'));
+        }
+        $this->authorize('can-view-own',$user);
        // $user = User::all();
         return view('users.show')->with('user',$user);
     }
@@ -121,7 +142,10 @@ class UsersController extends Controller
             'email' => 'required',
             'phone' => 'required',
             'photo_path'=>'required',
-            'accounts_id'=> 'required',
+            'account_id'=> 'required',
+            'role'=>'required',
+            'organization_id'=>'required',
+
         ]);
 
         $user->update($request->all());
@@ -174,7 +198,7 @@ class UsersController extends Controller
             'region'=> 'required',
             'address'=> 'required',
             'postal_code'=> 'required',
-            'accounts_id'=> 'required',
+            'account_id'=> 'required',
         ]);
 
         $data = $request->all();
